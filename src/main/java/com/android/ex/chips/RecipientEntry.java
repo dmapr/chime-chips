@@ -71,6 +71,9 @@ public class RecipientEntry {
     private final Uri mPhotoThumbnailUri;
 
     private boolean mIsValid;
+    private boolean mIsVerified;
+    private boolean mIsImported;
+    private boolean mIsInvited;
     /**
      * This can be updated after this object being constructed, when the photo is fetched
      * from remote directories.
@@ -81,9 +84,16 @@ public class RecipientEntry {
     private final String mLookupKey;
 
     protected RecipientEntry(int entryType, String displayName, String destination,
-            int destinationType, String destinationLabel, long contactId, Long directoryId,
-            long dataId, Uri photoThumbnailUri, boolean isFirstLevel, boolean isValid,
-            String lookupKey) {
+                             int destinationType, String destinationLabel, long contactId, Long directoryId,
+                             long dataId, Uri photoThumbnailUri, boolean isFirstLevel, boolean isValid,
+                             String lookupKey) {
+        this(entryType, displayName, destination, destinationType, destinationLabel, contactId, directoryId, dataId, photoThumbnailUri, isFirstLevel, isValid, lookupKey, false, false, false);
+    }
+
+    protected RecipientEntry(int entryType, String displayName, String destination,
+                             int destinationType, String destinationLabel, long contactId, Long directoryId,
+                             long dataId, Uri photoThumbnailUri, boolean isFirstLevel, boolean isValid,
+                             String lookupKey, boolean isVerified, boolean isImported, boolean isInvited) {
         mEntryType = entryType;
         mIsFirstLevel = isFirstLevel;
         mDisplayName = displayName;
@@ -98,6 +108,9 @@ public class RecipientEntry {
         mIsDivider = false;
         mIsValid = isValid;
         mLookupKey = lookupKey;
+        mIsImported = isImported;
+        mIsVerified = isVerified;
+        mIsInvited = isInvited;
     }
 
     public boolean isValid() {
@@ -140,10 +153,18 @@ public class RecipientEntry {
      * Construct a RecipientEntry from supplied data.
      */
     public static RecipientEntry constructSuppliedEntry(final String displayName,
-                                                         final boolean isValid, final String lookupKey) {
+                                                        final boolean isValid, final String lookupKey) {
+        return constructSuppliedEntry(displayName, isValid, lookupKey, false, false, false);
+    }
+
+    /**
+     * Construct a RecipientEntry from supplied data.
+     */
+    public static RecipientEntry constructSuppliedEntry(final String displayName,
+                                                        final boolean isValid, final String lookupKey, boolean isVerified, boolean isImported, boolean isInvited) {
         return new RecipientEntry(ENTRY_TYPE_PERSON, displayName, displayName,
                 INVALID_DESTINATION_TYPE, null, SUPPLIED_CONTACT, null /* directoryId */,
-                SUPPLIED_CONTACT, null, true, isValid, lookupKey);
+                SUPPLIED_CONTACT, null, true, isValid, lookupKey, isVerified, isImported, isInvited);
     }
 
     /**
@@ -271,5 +292,17 @@ public class RecipientEntry {
      */
     public boolean isSamePerson(final RecipientEntry entry) {
         return entry != null && mContactId == entry.mContactId;
+    }
+
+    public boolean isVerified() {
+        return mIsVerified;
+    }
+
+    public boolean isImported() {
+        return mIsImported;
+    }
+
+    public boolean isInvited() {
+        return mIsInvited;
     }
 }

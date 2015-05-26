@@ -19,6 +19,9 @@
             <enum name="end" value="0" />
             <enum name="start" value="1" />
         </attr>
+        <attr name="chipTextColorVerified" format="reference" />
+        <attr name="chipTextColorImported" format="reference" />
+        <attr name="chipTextColorInvited" format="reference" />
         <attr name="chipBackground" format="reference" />
         <attr name="chipBackgroundPressed" format="reference" />
         <attr name="chipDelete" format="reference" />

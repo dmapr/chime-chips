@@ -158,6 +158,10 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
     private int mMaxLines;
     private int mActionBarHeight;
 
+    private int mChipTextColorVerified = Color.BLACK;
+    private int mChipTextColorImported = Color.BLACK;
+    private int mChipTextColorInvited = Color.BLACK;
+
     /**
      * Enumerator for avatar position. See attr.xml for more details.
      * 0 for end, 1 for start.
@@ -633,6 +637,13 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
      */
     private Bitmap createUnselectedChip(RecipientEntry contact, TextPaint paint) {
         paint.setColor(getContext().getResources().getColor(android.R.color.black));
+        if (contact.isVerified()) {
+            paint.setColor(mChipTextColorVerified);
+        } else if (contact.isImported()) {
+            paint.setColor(mChipTextColorImported);
+        } else if (contact.isInvited()) {
+            paint.setColor(mChipTextColorInvited);
+        }
         ChipBitmapContainer bitmapContainer = createChipBitmap(contact, paint,
                 getChipBackground(contact), getDefaultChipBackgroundColor(contact));
 
@@ -916,6 +927,9 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
                 0);
         Resources r = getContext().getResources();
 
+        mChipTextColorVerified = a.getColor(R.styleable.RecipientEditTextView_chipTextColorVerified, Color.BLACK);
+        mChipTextColorImported = a.getColor(R.styleable.RecipientEditTextView_chipTextColorImported, Color.BLACK);
+        mChipTextColorInvited = a.getColor(R.styleable.RecipientEditTextView_chipTextColorInvited, Color.BLACK);
         mChipBackground = a.getDrawable(R.styleable.RecipientEditTextView_chipBackground);
         mChipBackgroundPressed = a
                 .getDrawable(R.styleable.RecipientEditTextView_chipBackgroundPressed);
