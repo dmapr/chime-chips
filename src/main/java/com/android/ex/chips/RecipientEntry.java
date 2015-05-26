@@ -33,6 +33,7 @@ public class RecipientEntry {
      * that is not a real contact.
      */
     /* package */ static final int GENERATED_CONTACT = -2;
+    /* package */ static final int SUPPLIED_CONTACT = -3;
 
     /** Used when {@link #mDestinationType} is invalid and thus shouldn't be used for display. */
     public static final int INVALID_DESTINATION_TYPE = -1;
@@ -133,6 +134,16 @@ public class RecipientEntry {
         return new RecipientEntry(ENTRY_TYPE_PERSON, phoneNumber, phoneNumber,
                 INVALID_DESTINATION_TYPE, null, INVALID_CONTACT, null /* directoryId */,
                 INVALID_CONTACT, null, true, isValid, null /* lookupKey */);
+    }
+
+    /**
+     * Construct a RecipientEntry from supplied data.
+     */
+    public static RecipientEntry constructSuppliedEntry(final String displayName,
+                                                         final boolean isValid, final String lookupKey) {
+        return new RecipientEntry(ENTRY_TYPE_PERSON, displayName, displayName,
+                INVALID_DESTINATION_TYPE, null, SUPPLIED_CONTACT, null /* directoryId */,
+                SUPPLIED_CONTACT, null, true, isValid, lookupKey);
     }
 
     /**

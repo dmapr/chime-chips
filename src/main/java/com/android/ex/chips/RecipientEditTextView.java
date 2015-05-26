@@ -57,6 +57,7 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.method.ArrowKeyMovementMethod;
 import android.text.method.QwertyKeyListener;
 import android.text.util.Rfc822Token;
 import android.text.util.Rfc822Tokenizer;
@@ -278,6 +279,12 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             }
         };
         setInputType(getInputType() | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        setMovementMethod(new ArrowKeyMovementMethod() {
+            @Override
+            public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {
+                return event.getAction() != MotionEvent.ACTION_UP && super.onTouchEvent(widget, buffer, event);
+            }
+        });
         setOnItemClickListener(this);
         setCustomSelectionActionModeCallback(this);
         mHandler = new Handler() {
@@ -406,6 +413,11 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             setSelection(Math.min(getSpannable().getSpanEnd(last) + 1, getText().length()));
         }
         super.onSelectionChanged(start, end);
+    }
+
+    @Override
+    public boolean onPreDraw() {
+        return isCursorVisible() ? super.onPreDraw() : true;
     }
 
     @Override
@@ -572,7 +584,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
 
     private void expand() {
         if (mShouldShrink) {
-            setMaxLines(Integer.MAX_VALUE);
+            setMaxLines(mMaxLines);
         }
         removeMoreChip();
         setCursorVisible(true);
@@ -946,7 +958,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
                 a.getInt(R.styleable.RecipientEditTextView_avatarPosition, AVATAR_POSITION_START);
         mDisableDelete = a.getBoolean(R.styleable.RecipientEditTextView_disableDelete, false);
 
-        mMaxLines = r.getInteger(R.integer.chips_max_lines);
+        mMaxLines = getMaxLines() != -1 ? getMaxLines() : Integer.MAX_VALUE;
         mLineSpacingExtra = r.getDimensionPixelOffset(R.dimen.line_spacing_extra);
         TypedValue tv = new TypedValue();
         if (context.getTheme().resolveAttribute(android.R.attr.actionBarSize, tv, true)) {
@@ -1602,44 +1614,8 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
      */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (!isFocused()) {
-            // Ignore any chip taps until this view is focused.
-            return super.onTouchEvent(event);
-        }
-        boolean handled = super.onTouchEvent(event);
-        int action = event.getAction();
-        boolean chipWasSelected = false;
-        if (mSelectedChip == null) {
-            mGestureDetector.onTouchEvent(event);
-        }
-        if (mCopyAddress == null && action == MotionEvent.ACTION_UP) {
-            float x = event.getX();
-            float y = event.getY();
-            int offset = putOffsetInRange(x, y);
-            DrawableRecipientChip currentChip = findChip(offset);
-            if (currentChip != null) {
-                if (action == MotionEvent.ACTION_UP) {
-                    if (mSelectedChip != null && mSelectedChip != currentChip) {
-                        clearSelectedChip();
-                        mSelectedChip = selectChip(currentChip);
-                    } else if (mSelectedChip == null) {
-                        setSelection(getText().length());
-                        commitDefault();
-                        mSelectedChip = selectChip(currentChip);
-                    } else {
-                        onClick(mSelectedChip);
-                    }
-                }
-                chipWasSelected = true;
-                handled = true;
-            } else if (mSelectedChip != null && shouldShowEditableText(mSelectedChip)) {
-                chipWasSelected = true;
-            }
-        }
-        if (action == MotionEvent.ACTION_UP && !chipWasSelected) {
-            clearSelectedChip();
-        }
-        return handled;
+        mGestureDetector.onTouchEvent(event);
+        return super.onTouchEvent(event);
     }
 
     private void scrollLineIntoView(int line) {
@@ -1913,6 +1889,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
                         || TextUtils.equals(item.getDisplayName(), destination)
                         || (mValidator != null && !mValidator.isValid(destination)))) {
             entry = RecipientEntry.constructFakeEntry(destination, item.isValid());
+            entry.setPhotoBytes(item.getPhotoBytes());
         } else {
             entry = item;
         }
@@ -2171,6 +2148,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             DrawableRecipientChip newChip;
             final boolean showAddress =
                     currentChip.getContactId() == RecipientEntry.GENERATED_CONTACT ||
+                    currentChip.getContactId() == RecipientEntry.SUPPLIED_CONTACT ||
                     getAdapter().forceShowAddress();
             try {
                 if (showAddress && mNoChips) {
@@ -2197,6 +2175,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             } else {
                 showAlternates(newChip, mAlternatesPopup);
             }
+
             setCursorVisible(false);
             return newChip;
         }
@@ -2455,6 +2434,10 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
                     if (tokenEnd > editable.length()) {
                         tokenEnd = editable.length();
                     }
+                    if (isSuppliedContact(repl[0])) {
+                        // In case of a generated contact remove the entire contact
+                        tokenStart = getSpannable().getSpanStart(repl[0]);
+                    }
                     editable.delete(tokenStart, tokenEnd);
                     getSpannable().removeSpan(repl[0]);
                 }
@@ -2491,6 +2474,11 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         long contactId = chip.getContactId();
         return contactId == RecipientEntry.INVALID_CONTACT
                 || (!isPhoneQuery() && contactId == RecipientEntry.GENERATED_CONTACT);
+    }
+
+    public boolean isSuppliedContact(DrawableRecipientChip chip) {
+        long contactId = chip.getContactId();
+        return contactId == RecipientEntry.SUPPLIED_CONTACT;
     }
 
     /**
@@ -3035,8 +3023,34 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
 
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
-        // Do nothing.
-        return false;
+        boolean handled = false;
+        boolean chipWasSelected = false;
+        if (mCopyAddress == null) {
+            float x = e.getX();
+            float y = e.getY();
+            int offset = putOffsetInRange(x, y);
+            DrawableRecipientChip currentChip = findChip(offset);
+            if (currentChip != null) {
+                if (mSelectedChip != null && mSelectedChip != currentChip) {
+                    clearSelectedChip();
+                    mSelectedChip = selectChip(currentChip);
+                } else if (mSelectedChip == null) {
+                    setSelection(getText().length());
+                    commitDefault();
+                    mSelectedChip = selectChip(currentChip);
+                } else {
+                    onClick(mSelectedChip);
+                }
+                chipWasSelected = true;
+                handled = true;
+            } else if (mSelectedChip != null && shouldShowEditableText(mSelectedChip)) {
+                chipWasSelected = true;
+            }
+        }
+        if (!chipWasSelected) {
+            clearSelectedChip();
+        }
+        return handled;
     }
 
     @Override
@@ -3106,6 +3120,42 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
 
     public void setAlternatePopupAnchor(View v) {
         mAlternatePopupAnchor = v;
+    }
+
+    /**
+     * Update the chip after the corresponding recipient entry was updated with the delayed loaded
+     * avatar
+     *
+     * @param lookupKey The lookup key from the updated recipient entry
+     */
+    public void updateChip(String lookupKey) {
+        if (!TextUtils.isEmpty(lookupKey)) {
+            DrawableRecipientChip[] recipients = getSortedRecipients();
+            for (DrawableRecipientChip chip : recipients) {
+                if (lookupKey.equals(chip.getLookupKey())) {
+                    if (!chip.isSelected()) {
+                        // Only the unselected version of the chip has the avatar icon
+                        int start = getChipStart(chip);
+                        int end = getChipEnd(chip);
+
+                        // Despite our best efforts it seems with an avatar load delay
+                        // we might still end with an invalid update, so add a sanity check
+                        if (start >=0 && end > start) { // SPAN_EXCLUSIVE_EXCLUSIVE requires non-zero length
+                            Editable editable = getText();
+                            QwertyKeyListener.markAsReplaced(editable, start, end, "");
+                            editable.removeSpan(chip);
+                            try {
+                                editable.setSpan(constructChipSpan(chip.getEntry(), false),
+                                        start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            } catch (NullPointerException e) {
+                                Log.e(TAG, e.getMessage(), e);
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     private static class ChipBitmapContainer {

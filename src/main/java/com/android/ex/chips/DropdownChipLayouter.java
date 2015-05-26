@@ -184,6 +184,7 @@ public class DropdownChipLayouter {
 
         if (showImage) {
             switch (type) {
+                case SINGLE_RECIPIENT:
                 case BASE_RECIPIENT:
                     byte[] photoBytes = entry.getPhotoBytes();
                     if (photoBytes != null && photoBytes.length > 0) {
@@ -204,7 +205,6 @@ public class DropdownChipLayouter {
                         view.setImageResource(getDefaultPhotoResId());
                     }
                     break;
-                case SINGLE_RECIPIENT:
                 default:
                     break;
             }
