@@ -46,6 +46,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.Editable;
 import android.text.InputType;
@@ -197,6 +198,9 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
     private boolean mNoChips = false;
     private boolean mShouldShrink = true;
 
+    private List<ChipInfo> mRestoredChips = null;
+    private boolean mShrinkOnRestore = false;
+
     // VisibleForTesting
     ArrayList<DrawableRecipientChip> mTemporaryRecipients;
 
@@ -227,6 +231,14 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
 
     private IndividualReplacementTask mIndividualReplacements;
 
+    private Runnable mHandleRestoredChips = new Runnable() {
+
+        @Override
+        public void run() {
+            handleRestoredChips();
+        }
+
+    };
     private Runnable mHandlePendingChips = new Runnable() {
 
         @Override
@@ -407,6 +419,25 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         return results;
     }
 
+    public List<ChipInfo> getChips() {
+        DrawableRecipientChip[] chips =
+                getText().getSpans(0, getText().length(), DrawableRecipientChip.class);
+        List<ChipInfo> results = new ArrayList();
+        if (chips == null) {
+            return results;
+        }
+
+        for (DrawableRecipientChip chip : chips) {
+            ChipInfo chipInfo = new ChipInfo();
+            chipInfo.recipientEntry = chip.getEntry();
+            chipInfo.chipStart = getText().getSpanStart(chip);
+            chipInfo.chipEnd = getText().getSpanEnd(chip);
+            results.add(chipInfo);
+        }
+
+        return results;
+    }
+
     @Override
     public void onSelectionChanged(int start, int end) {
         // When selection changes, see if it is inside the chips area.
@@ -429,7 +460,15 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         if (!TextUtils.isEmpty(getText())) {
             super.onRestoreInstanceState(null);
         } else {
-            super.onRestoreInstanceState(state);
+            if (state instanceof SavedState) {
+                SavedState savedState = (SavedState) state;
+
+                super.onRestoreInstanceState(savedState.getSuperState());
+                mRestoredChips = savedState.chips;
+                mShrinkOnRestore = savedState.shouldShrink;
+            } else {
+                super.onRestoreInstanceState(state);
+            }
         }
     }
 
@@ -437,7 +476,13 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
     public Parcelable onSaveInstanceState() {
         // If the user changes orientation while they are editing, just roll back the selection.
         clearSelectedChip();
-        return super.onSaveInstanceState();
+
+        Parcelable parcelable = super.onSaveInstanceState();
+        SavedState savedState = new SavedState(parcelable);
+        savedState.shouldShrink = mMoreChip != null;
+        expand(); // Need to expand to get all the spans
+        savedState.chips = getChips();
+        return savedState;
     }
 
     /**
@@ -1020,6 +1065,8 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         if (width != 0 && height != 0) {
             if (mPendingChipsCount > 0) {
                 postHandlePendingChips();
+            } else if (mRestoredChips != null) {
+                postHandleRestoredChips();
             } else {
                 checkChipWidths();
             }
@@ -1042,6 +1089,11 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         mHandler.post(mHandlePendingChips);
     }
 
+    private void postHandleRestoredChips() {
+        mHandler.removeCallbacks(mHandleRestoredChips);
+        mHandler.post(mHandleRestoredChips);
+    }
+
     private void checkChipWidths() {
         // Check the widths of the associated chips.
         DrawableRecipientChip[] chips = getSortedRecipients();
@@ -1054,6 +1106,19 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
                     // Need to redraw that chip.
                     replaceChip(chip, chip.getEntry());
                 }
+            }
+        }
+    }
+
+    private synchronized void handleRestoredChips() {
+        if (mRestoredChips != null) {
+            for (ChipInfo chipInfo: mRestoredChips) {
+                DrawableRecipientChip recipientChip = constructChipSpan(chipInfo.recipientEntry, false);
+                getEditableText().setSpan(recipientChip, chipInfo.chipStart, chipInfo.chipEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            mRestoredChips = null;
+            if (mShrinkOnRestore) {
+                shrink();
             }
         }
     }
@@ -3180,5 +3245,77 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         float top;
         float right;
         float bottom;
+    }
+
+    static class ChipInfo implements Parcelable {
+        private RecipientEntry recipientEntry;
+        private int chipStart;
+        private int chipEnd;
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeParcelable(this.recipientEntry, 0);
+            dest.writeInt(this.chipStart);
+            dest.writeInt(this.chipEnd);
+        }
+
+        public ChipInfo() {
+        }
+
+        private ChipInfo(Parcel in) {
+            this.recipientEntry = in.readParcelable(RecipientEntry.class.getClassLoader());
+            this.chipStart = in.readInt();
+            this.chipEnd = in.readInt();
+        }
+
+        public static final Parcelable.Creator<ChipInfo> CREATOR = new Parcelable.Creator<ChipInfo>() {
+            public ChipInfo createFromParcel(Parcel source) {
+                return new ChipInfo(source);
+            }
+
+            public ChipInfo[] newArray(int size) {
+                return new ChipInfo[size];
+            }
+        };
+    }
+
+    static class SavedState extends BaseSavedState {
+        public List<ChipInfo> chips;
+        public boolean shouldShrink;
+
+        public SavedState(Parcelable superState) {
+            super(superState);
+        }
+
+        private SavedState(Parcel source) {
+            super(source);
+
+            chips = new ArrayList<>();
+            source.readList(chips, ChipInfo.class.getClassLoader());
+            shouldShrink = source.readByte() == 1;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            super.writeToParcel(dest, flags);
+            dest.writeList(chips);
+            dest.writeByte((byte) (shouldShrink ? 1 : 0));
+        }
+
+        public static final Parcelable.Creator<SavedState> CREATOR =
+            new Parcelable.Creator<SavedState>() {
+                public SavedState createFromParcel(Parcel in) {
+                    return new SavedState(in);
+                }
+                public SavedState[] newArray(int size) {
+                    return new SavedState[size];
+                }
+            };
+
     }
 }
