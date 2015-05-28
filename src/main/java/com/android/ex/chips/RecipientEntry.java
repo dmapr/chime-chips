@@ -17,6 +17,8 @@
 package com.android.ex.chips;
 
 import android.net.Uri;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.provider.ContactsContract.CommonDataKinds.Email;
 import android.provider.ContactsContract.DisplayNameSources;
 import android.text.util.Rfc822Token;
@@ -25,7 +27,7 @@ import android.text.util.Rfc822Tokenizer;
 /**
  * Represents one entry inside recipient auto-complete list.
  */
-public class RecipientEntry {
+public class RecipientEntry implements Parcelable {
     /* package */ static final int INVALID_CONTACT = -1;
     /**
      * A GENERATED_CONTACT is one that was created based entirely on
@@ -305,4 +307,60 @@ public class RecipientEntry {
     public boolean isInvited() {
         return mIsInvited;
     }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(this.mEntryType);
+        dest.writeByte(mIsFirstLevel ? (byte) 1 : (byte) 0);
+        dest.writeString(this.mDisplayName);
+        dest.writeString(this.mDestination);
+        dest.writeInt(this.mDestinationType);
+        dest.writeString(this.mDestinationLabel);
+        dest.writeLong(this.mContactId);
+        dest.writeValue(this.mDirectoryId);
+        dest.writeLong(this.mDataId);
+        dest.writeByte(mIsDivider ? (byte) 1 : (byte) 0);
+        dest.writeParcelable(this.mPhotoThumbnailUri, 0);
+        dest.writeByte(mIsValid ? (byte) 1 : (byte) 0);
+        dest.writeByte(mIsVerified ? (byte) 1 : (byte) 0);
+        dest.writeByte(mIsImported ? (byte) 1 : (byte) 0);
+        dest.writeByte(mIsInvited ? (byte) 1 : (byte) 0);
+        dest.writeByteArray(this.mPhotoBytes);
+        dest.writeString(this.mLookupKey);
+    }
+
+    private RecipientEntry(Parcel in) {
+        this.mEntryType = in.readInt();
+        this.mIsFirstLevel = in.readByte() != 0;
+        this.mDisplayName = in.readString();
+        this.mDestination = in.readString();
+        this.mDestinationType = in.readInt();
+        this.mDestinationLabel = in.readString();
+        this.mContactId = in.readLong();
+        this.mDirectoryId = (Long) in.readValue(Long.class.getClassLoader());
+        this.mDataId = in.readLong();
+        this.mIsDivider = in.readByte() != 0;
+        this.mPhotoThumbnailUri = in.readParcelable(Uri.class.getClassLoader());
+        this.mIsValid = in.readByte() != 0;
+        this.mIsVerified = in.readByte() != 0;
+        this.mIsImported = in.readByte() != 0;
+        this.mIsInvited = in.readByte() != 0;
+        this.mPhotoBytes = in.createByteArray();
+        this.mLookupKey = in.readString();
+    }
+
+    public static final Parcelable.Creator<RecipientEntry> CREATOR = new Parcelable.Creator<RecipientEntry>() {
+        public RecipientEntry createFromParcel(Parcel source) {
+            return new RecipientEntry(source);
+        }
+
+        public RecipientEntry[] newArray(int size) {
+            return new RecipientEntry[size];
+        }
+    };
 }
