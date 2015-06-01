@@ -2520,7 +2520,6 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
 
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            // Do nothing.
             mScrollAllowed = true;
         }
     }
