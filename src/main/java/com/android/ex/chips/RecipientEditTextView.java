@@ -405,8 +405,15 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             return results;
         }
 
-        for (DrawableRecipientChip c : chips) {
-            results.add(c.getEntry());
+        for (DrawableRecipientChip chip : chips) {
+            results.add(chip.getEntry());
+        }
+
+        // We want all of the chips, not just the visible ones
+        if (mRemovedSpans != null) {
+            for (DrawableRecipientChip chip : mRemovedSpans) {
+                results.add(chip.getEntry());
+            }
         }
 
         return results;
