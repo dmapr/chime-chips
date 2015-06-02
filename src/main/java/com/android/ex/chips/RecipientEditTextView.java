@@ -58,7 +58,6 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.method.ArrowKeyMovementMethod;
 import android.text.method.QwertyKeyListener;
 import android.text.util.Rfc822Token;
 import android.text.util.Rfc822Tokenizer;
@@ -192,7 +191,6 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
     // VisibleForTesting
     final ArrayList<String> mPendingChips = new ArrayList<String>();
 
-
     private int mPendingChipsCount = 0;
     private int mCheckedItem;
     private boolean mNoChips = false;
@@ -216,6 +214,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
     private ScrollView mScrollView;
     private boolean mTriedGettingScrollView;
     private boolean mDragEnabled = false;
+    private boolean mScrollAllowed = false;
 
     private boolean mAttachedToWindow;
 
@@ -295,12 +294,6 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             }
         };
         setInputType(getInputType() | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        setMovementMethod(new ArrowKeyMovementMethod() {
-            @Override
-            public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {
-                return event.getAction() != MotionEvent.ACTION_UP && super.onTouchEvent(widget, buffer, event);
-            }
-        });
         setOnItemClickListener(this);
         setCustomSelectionActionModeCallback(this);
         mHandler = new Handler() {
@@ -451,8 +444,10 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
     }
 
     @Override
-    public boolean onPreDraw() {
-        return isCursorVisible() ? super.onPreDraw() : true;
+    public boolean bringPointIntoView(int offset) {
+        boolean handled = mScrollAllowed ? super.bringPointIntoView(offset) : true;
+        mScrollAllowed = false;
+        return handled;
     }
 
     @Override
@@ -1683,14 +1678,6 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         setCursorVisible(true);
     }
 
-    /**
-     * Monitor touch events in the RecipientEditTextView.
-     * If the view does not have focus, any tap on the view
-     * will just focus the view. If the view has focus, determine
-     * if the touch target is a recipient chip. If it is and the chip
-     * is not selected, select it and clear any other selected chips.
-     * If it isn't, then select that chip.
-     */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         mGestureDetector.onTouchEvent(event);
@@ -2533,7 +2520,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
 
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            // Do nothing.
+            mScrollAllowed = true;
         }
     }
 
@@ -3100,6 +3087,14 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         // Do nothing.
     }
 
+    /**
+     * Monitor touch events in the RecipientEditTextView.
+     * If the view does not have focus, any tap on the view
+     * will just focus the view. If the view has focus, determine
+     * if the touch target is a recipient chip. If it is and the chip
+     * is not selected, select it and clear any other selected chips.
+     * If it isn't, then select that chip.
+     */
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
         boolean handled = false;
