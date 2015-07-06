@@ -86,6 +86,7 @@ import android.widget.ListAdapter;
 import android.widget.ListPopupWindow;
 import android.widget.ListView;
 import android.widget.MultiAutoCompleteTextView;
+import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -278,7 +279,6 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         mAlternatesPopup = new ListPopupWindow(context);
         mAlternatesPopup.setBackgroundDrawable(null);
         mAddressPopup = new ListPopupWindow(context);
-        mAddressPopup.setBackgroundDrawable(null);
         mCopyDialog = new Dialog(context);
         mAlternatesListener = new OnItemClickListener() {
             @Override
@@ -2276,6 +2276,12 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 unselectChip(currentChip);
                 popup.dismiss();
+            }
+        });
+        popup.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                unselectChip(currentChip);
             }
         });
         popup.show();
