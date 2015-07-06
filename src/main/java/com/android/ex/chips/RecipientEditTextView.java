@@ -452,7 +452,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
 
     @Override
     public boolean bringPointIntoView(int offset) {
-        boolean handled = mScrollAllowed ? super.bringPointIntoView(offset) : true;
+        boolean handled = mScrollAllowed || mMoreChip != null ? super.bringPointIntoView(offset) : true;
         mScrollAllowed = false;
         return handled;
     }
