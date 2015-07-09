@@ -2303,7 +2303,6 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         if (start == -1 || end == -1) {
             Log.w(TAG, "The chip doesn't exist or may be a chip a user was editing");
             setSelection(editable.length());
-            commitDefault();
         } else {
             getSpannable().removeSpan(chip);
             QwertyKeyListener.markAsReplaced(editable, start, end, "");
@@ -3123,7 +3122,6 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
                     mSelectedChip = selectChip(currentChip);
                 } else if (mSelectedChip == null) {
                     setSelection(getText().length());
-                    commitDefault();
                     mSelectedChip = selectChip(currentChip);
                 } else {
                     onClick(mSelectedChip);
