@@ -217,6 +217,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
     private boolean mDragEnabled = false;
 
     private boolean mAttachedToWindow;
+    private boolean mPerformingLongClick = false;
 
     private final Runnable mAddTextWatcher = new Runnable() {
         @Override
@@ -440,7 +441,20 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
     @Override
     public void onSelectionChanged(int start, int end) {
         super.onSelectionChanged(start, end);
-        setCursorVisible(mSelectedChip == null && getSelectionStart() >= getChipEnd(getLastChip()));
+
+        /* During {@link android.widget.Editor#performLongClick(boolean)}:
+         * # If the click is over empty space, and
+         * # the insertion controller is available, then
+         * # set the selection
+         * # and use the insertion controller
+
+         * The insertion controller is NOT available if the cursor isn't visible. So if the selection is set while
+         * performing a long click, don't hide the cursor!
+         */
+        if (!mPerformingLongClick) {
+            setCursorVisible(mSelectedChip == null && getSelectionStart() >= getChipEnd(getLastChip()));
+        }
+        mPerformingLongClick = false;
     }
 
     @Override
@@ -1601,6 +1615,12 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         }
 
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean performLongClick() {
+        mPerformingLongClick = true;
+        return super.performLongClick();
     }
 
     // Visible for testing.
