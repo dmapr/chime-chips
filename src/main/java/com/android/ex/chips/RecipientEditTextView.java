@@ -2319,6 +2319,9 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         if (mAlternatesPopup != null && mAlternatesPopup.isShowing()) {
             mAlternatesPopup.dismiss();
         }
+        if (mAddressPopup != null && mAddressPopup.isShowing()) {
+            mAddressPopup.dismiss();
+        }
     }
 
     @Override
@@ -2518,6 +2521,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             } else if (count > before) {
                 int selStart = getSelectionStart();
                 if (selStart - count > 0 && selStart < getChipEnd(getLastChip())) {
+                    clearSelectedChip();
                     mSkipRemove = true;
 
                     CharSequence typed = getText().subSequence(selStart - count, selStart);
