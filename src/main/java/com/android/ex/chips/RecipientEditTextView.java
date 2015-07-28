@@ -1480,35 +1480,6 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             }
             dismissDropDown();
             return true;
-        } else {
-            int tokenEnd = mTokenizer.findTokenEnd(editable, start);
-            if (editable.length() > tokenEnd + 1) {
-                char charAt = editable.charAt(tokenEnd + 1);
-                if (charAt == COMMIT_CHAR_COMMA || charAt == COMMIT_CHAR_SEMICOLON) {
-                    tokenEnd++;
-                }
-            }
-            String text = editable.toString().substring(start, tokenEnd).trim();
-            clearComposingText();
-            if (text != null && text.length() > 0 && !text.equals(" ")) {
-                RecipientEntry entry = createTokenizedEntry(text);
-                if (entry != null) {
-                    QwertyKeyListener.markAsReplaced(editable, start, end, "");
-                    CharSequence chipText = createChip(entry, false);
-                    if (chipText != null && start > -1 && end > -1) {
-                        editable.replace(start, end, chipText);
-                    }
-                }
-                // Only dismiss the dropdown if it is related to the text we
-                // just committed.
-                // For paste, it may not be as there are possibly multiple
-                // tokens being added.
-                if (end == getSelectionEnd()) {
-                    dismissDropDown();
-                }
-                sanitizeBetween();
-                return true;
-            }
         }
         return false;
     }
