@@ -178,6 +178,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
     private Handler mHandler;
     private TextWatcher mTextWatcher;
     private DropdownChipLayouter mDropdownChipLayouter;
+    private OnValidateItemListener mValidateItemListener;
 
     private ListPopupWindow mAlternatesPopup;
     private ListPopupWindow mAddressPopup;
@@ -269,6 +270,16 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
         void onRecipientEntryItemClicked(int charactersTyped, int position);
     }
 
+    public interface OnValidateItemListener {
+        /**
+         * Callback that occurs when a chip is about to be committed for an item.
+         * @param adapter the adapter backing this {@link RecipientEditTextView}
+         * @param position the position in the dropdown list that is about to be submitted
+         * @return whether or not to commit a chip for the item
+         */
+        boolean onValidateItem(ListAdapter adapter, int position);
+    }
+
     public RecipientEditTextView(Context context, AttributeSet attrs) {
         super(context, attrs);
         setChipDimensions(context, attrs);
@@ -332,6 +343,10 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
     public void setDropdownChipLayouter(DropdownChipLayouter dropdownChipLayouter) {
         mDropdownChipLayouter = dropdownChipLayouter;
         mDropdownChipLayouter.setDeleteListener(this);
+    }
+
+    public void setOnValidateItemListener(OnValidateItemListener onValidateItemListener) {
+        mValidateItemListener = onValidateItemListener;
     }
 
     public void setRecipientEntryItemClickedListener(RecipientEntryItemClickedListener listener) {
@@ -1470,11 +1485,12 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
             // address so we won't try to replace the user's potentially correct but
             // new/unencountered email input
             if (!isValidEmailAddress(editable.toString().substring(start, end).trim())) {
-                final int selectedPosition = getListSelection();
+                int selectedPosition = getListSelection();
                 if (selectedPosition == -1) {
-                    // Nothing is selected; use the first item
-                    submitItemAtPosition(0);
-                } else {
+                    selectedPosition = 0;
+                }
+
+                if (mValidateItemListener == null || mValidateItemListener.onValidateItem(getAdapter(), selectedPosition)) {
                     submitItemAtPosition(selectedPosition);
                 }
             }
