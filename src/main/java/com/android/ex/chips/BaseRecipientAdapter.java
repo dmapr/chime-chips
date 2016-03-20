@@ -135,6 +135,32 @@ public class BaseRecipientAdapter extends BaseAdapter implements Filterable, Acc
         public final String thumbnailUriString;
         public final int displayNameSource;
         public final String lookupKey;
+        public final String identityKey;
+
+        public TemporaryEntry(
+                String displayName,
+                String destination,
+                int destinationType,
+                String destinationLabel,
+                long contactId,
+                Long directoryId,
+                long dataId,
+                String thumbnailUriString,
+                int displayNameSource,
+                String lookupKey,
+                String identityKey) {
+            this.displayName = displayName;
+            this.destination = destination;
+            this.destinationType = destinationType;
+            this.destinationLabel = destinationLabel;
+            this.contactId = contactId;
+            this.directoryId = directoryId;
+            this.dataId = dataId;
+            this.thumbnailUriString = thumbnailUriString;
+            this.displayNameSource = displayNameSource;
+            this.lookupKey = lookupKey;
+            this.identityKey = identityKey;
+        }
 
         public TemporaryEntry(
                 String displayName,
@@ -147,16 +173,8 @@ public class BaseRecipientAdapter extends BaseAdapter implements Filterable, Acc
                 String thumbnailUriString,
                 int displayNameSource,
                 String lookupKey) {
-            this.displayName = displayName;
-            this.destination = destination;
-            this.destinationType = destinationType;
-            this.destinationLabel = destinationLabel;
-            this.contactId = contactId;
-            this.directoryId = directoryId;
-            this.dataId = dataId;
-            this.thumbnailUriString = thumbnailUriString;
-            this.displayNameSource = displayNameSource;
-            this.lookupKey = lookupKey;
+            this(displayName,destination,destinationType,destinationLabel,contactId,directoryId,
+                    dataId,thumbnailUriString,displayNameSource,lookupKey,lookupKey);
         }
 
         public TemporaryEntry(Cursor cursor, Long directoryId) {
@@ -170,6 +188,7 @@ public class BaseRecipientAdapter extends BaseAdapter implements Filterable, Acc
             this.thumbnailUriString = cursor.getString(Queries.Query.PHOTO_THUMBNAIL_URI);
             this.displayNameSource = cursor.getInt(Queries.Query.DISPLAY_NAME_SOURCE);
             this.lookupKey = cursor.getString(Queries.Query.LOOKUP_KEY);
+            this.identityKey = cursor.getString(Queries.Query.IDENTITY_KEY);
         }
     }
 
@@ -734,7 +753,7 @@ public class BaseRecipientAdapter extends BaseAdapter implements Filterable, Acc
                     entry.displayNameSource,
                     entry.destination, entry.destinationType, entry.destinationLabel,
                     entry.contactId, entry.directoryId, entry.dataId, entry.thumbnailUriString,
-                    true, entry.lookupKey));
+                    true, entry.lookupKey, entry.identityKey));
         } else if (entryMap.containsKey(entry.contactId)) {
             // We already have a section for the person.
             final List<RecipientEntry> entryList = entryMap.get(entry.contactId);
@@ -743,7 +762,7 @@ public class BaseRecipientAdapter extends BaseAdapter implements Filterable, Acc
                     entry.displayNameSource,
                     entry.destination, entry.destinationType, entry.destinationLabel,
                     entry.contactId, entry.directoryId, entry.dataId, entry.thumbnailUriString,
-                    true, entry.lookupKey));
+                    true, entry.lookupKey,entry.identityKey));
         } else {
             final List<RecipientEntry> entryList = new ArrayList<RecipientEntry>();
             entryList.add(RecipientEntry.constructTopLevelEntry(
@@ -751,7 +770,7 @@ public class BaseRecipientAdapter extends BaseAdapter implements Filterable, Acc
                     entry.displayNameSource,
                     entry.destination, entry.destinationType, entry.destinationLabel,
                     entry.contactId, entry.directoryId, entry.dataId, entry.thumbnailUriString,
-                    true, entry.lookupKey));
+                    true, entry.lookupKey,entry.identityKey));
             entryMap.put(entry.contactId, entryList);
         }
     }

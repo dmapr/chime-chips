@@ -3163,6 +3163,16 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements
      * unfinished text at the end.
      */
     public void appendRecipientEntry(final RecipientEntry entry) {
+        if(getMeasuredWidth() == 0){
+            post(new Runnable() {
+                @Override
+                public void run() {
+                    appendRecipientEntry(entry);
+                }
+            });
+            return;
+        }
+
         clearComposingText();
 
         final Editable editable = getText();

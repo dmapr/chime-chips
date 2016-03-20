@@ -261,7 +261,8 @@ public class RecipientAlternatesAdapter extends CursorAdapter {
                         c.getLong(Queries.Query.DATA_ID),
                         c.getString(Queries.Query.PHOTO_THUMBNAIL_URI),
                         true,
-                        c.getString(Queries.Query.LOOKUP_KEY));
+                        c.getString(Queries.Query.LOOKUP_KEY),
+                        c.getString(Queries.Query.IDENTITY_KEY));
 
                 /*
                  * In certain situations, we may have two results for one address, where one of the
@@ -570,7 +571,8 @@ public class RecipientAlternatesAdapter extends CursorAdapter {
                 c.getLong(Queries.Query.DATA_ID),
                 c.getString(Queries.Query.PHOTO_THUMBNAIL_URI),
                 true,
-                c.getString(Queries.Query.LOOKUP_KEY));
+                c.getString(Queries.Query.LOOKUP_KEY),
+                c.getString(Queries.Query.IDENTITY_KEY));
     }
 
     @Override
