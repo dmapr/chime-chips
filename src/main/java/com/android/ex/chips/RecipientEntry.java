@@ -76,6 +76,7 @@ public class RecipientEntry implements Parcelable {
     private boolean mIsVerified;
     private boolean mIsImported;
     private boolean mIsInvited;
+    private final String mIdentityKey;
     /**
      * This can be updated after this object being constructed, when the photo is fetched
      * from remote directories.
@@ -89,13 +90,20 @@ public class RecipientEntry implements Parcelable {
                              int destinationType, String destinationLabel, long contactId, Long directoryId,
                              long dataId, Uri photoThumbnailUri, boolean isFirstLevel, boolean isValid,
                              String lookupKey) {
-        this(entryType, displayName, destination, destinationType, destinationLabel, contactId, directoryId, dataId, photoThumbnailUri, isFirstLevel, isValid, lookupKey, false, false, false);
+        this(entryType, displayName, destination, destinationType, destinationLabel, contactId, directoryId, dataId, photoThumbnailUri, isFirstLevel, isValid, lookupKey, false, false, false,null);
     }
 
     protected RecipientEntry(int entryType, String displayName, String destination,
                              int destinationType, String destinationLabel, long contactId, Long directoryId,
                              long dataId, Uri photoThumbnailUri, boolean isFirstLevel, boolean isValid,
-                             String lookupKey, boolean isVerified, boolean isImported, boolean isInvited) {
+                             String lookupKey, String identityKey) {
+        this(entryType, displayName, destination, destinationType, destinationLabel, contactId, directoryId, dataId, photoThumbnailUri, isFirstLevel, isValid, lookupKey, false, false, false,identityKey);
+    }
+
+    protected RecipientEntry(int entryType, String displayName, String destination,
+                             int destinationType, String destinationLabel, long contactId, Long directoryId,
+                             long dataId, Uri photoThumbnailUri, boolean isFirstLevel, boolean isValid,
+                             String lookupKey, boolean isVerified, boolean isImported, boolean isInvited, String identityKey) {
         mEntryType = entryType;
         mIsFirstLevel = isFirstLevel;
         mDisplayName = displayName;
@@ -113,6 +121,7 @@ public class RecipientEntry implements Parcelable {
         mIsImported = isImported;
         mIsVerified = isVerified;
         mIsInvited = isInvited;
+        mIdentityKey = identityKey;
     }
 
     public boolean isValid() {
@@ -148,12 +157,17 @@ public class RecipientEntry implements Parcelable {
             final boolean isValid) {
         return new RecipientEntry(ENTRY_TYPE_PERSON, phoneNumber, phoneNumber,
                 INVALID_DESTINATION_TYPE, null, INVALID_CONTACT, null /* directoryId */,
-                INVALID_CONTACT, null, true, isValid, null /* lookupKey */);
+                INVALID_CONTACT, null, true, isValid, null /* lookupKey */, null);
     }
 
     /**
      * Construct a RecipientEntry from supplied data.
      */
+    public static RecipientEntry constructSuppliedEntry(final String displayName,
+                                                        final boolean isValid, final String lookupKey, String identityKey) {
+        return constructSuppliedEntry(displayName, isValid, lookupKey, false, false, false,identityKey);
+    }
+
     public static RecipientEntry constructSuppliedEntry(final String displayName,
                                                         final boolean isValid, final String lookupKey) {
         return constructSuppliedEntry(displayName, isValid, lookupKey, false, false, false);
@@ -163,10 +177,17 @@ public class RecipientEntry implements Parcelable {
      * Construct a RecipientEntry from supplied data.
      */
     public static RecipientEntry constructSuppliedEntry(final String displayName,
+                                                        final boolean isValid, final String lookupKey, boolean isVerified, boolean isImported, boolean isInvited, String identiyyKey) {
+        return new RecipientEntry(ENTRY_TYPE_PERSON, displayName, displayName,
+                INVALID_DESTINATION_TYPE, null, SUPPLIED_CONTACT, null /* directoryId */,
+                SUPPLIED_CONTACT, null, true, isValid, lookupKey, isVerified, isImported, isInvited, identiyyKey);
+    }
+
+    public static RecipientEntry constructSuppliedEntry(final String displayName,
                                                         final boolean isValid, final String lookupKey, boolean isVerified, boolean isImported, boolean isInvited) {
         return new RecipientEntry(ENTRY_TYPE_PERSON, displayName, displayName,
                 INVALID_DESTINATION_TYPE, null, SUPPLIED_CONTACT, null /* directoryId */,
-                SUPPLIED_CONTACT, null, true, isValid, lookupKey, isVerified, isImported, isInvited);
+                SUPPLIED_CONTACT, null, true, isValid, lookupKey, isVerified, isImported, isInvited, null);
     }
 
     /**
@@ -195,7 +216,16 @@ public class RecipientEntry implements Parcelable {
     public static RecipientEntry constructTopLevelEntry(String displayName, int displayNameSource,
             String destination, int destinationType, String destinationLabel, long contactId,
             Long directoryId, long dataId, Uri photoThumbnailUri, boolean isValid,
-            String lookupKey) {
+            String lookupKey, String identityKey) {
+        return new RecipientEntry(ENTRY_TYPE_PERSON, pickDisplayName(displayNameSource,
+                displayName, destination), destination, destinationType, destinationLabel,
+                contactId, directoryId, dataId, photoThumbnailUri, true, isValid, lookupKey, identityKey);
+    }
+
+    public static RecipientEntry constructTopLevelEntry(String displayName, int displayNameSource,
+                                                        String destination, int destinationType, String destinationLabel, long contactId,
+                                                        Long directoryId, long dataId, Uri photoThumbnailUri, boolean isValid,
+                                                        String lookupKey) {
         return new RecipientEntry(ENTRY_TYPE_PERSON, pickDisplayName(displayNameSource,
                 displayName, destination), destination, destinationType, destinationLabel,
                 contactId, directoryId, dataId, photoThumbnailUri, true, isValid, lookupKey);
@@ -204,17 +234,37 @@ public class RecipientEntry implements Parcelable {
     public static RecipientEntry constructTopLevelEntry(String displayName, int displayNameSource,
             String destination, int destinationType, String destinationLabel, long contactId,
             Long directoryId, long dataId, String thumbnailUriAsString, boolean isValid,
-            String lookupKey) {
+            String lookupKey, String identityKey) {
         return new RecipientEntry(ENTRY_TYPE_PERSON, pickDisplayName(displayNameSource,
                 displayName, destination), destination, destinationType, destinationLabel,
                 contactId, directoryId, dataId, (thumbnailUriAsString != null
-                ? Uri.parse(thumbnailUriAsString) : null), true, isValid, lookupKey);
+                ? Uri.parse(thumbnailUriAsString) : null), true, isValid, lookupKey, identityKey);
+    }
+
+    public static RecipientEntry constructTopLevelEntry(String displayName, int displayNameSource,
+                                                        String destination, int destinationType, String destinationLabel, long contactId,
+                                                        Long directoryId, long dataId, String thumbnailUriAsString, boolean isValid,
+                                                        String lookupKey) {
+        return new RecipientEntry(ENTRY_TYPE_PERSON, pickDisplayName(displayNameSource,
+                displayName, destination), destination, destinationType, destinationLabel,
+                contactId, directoryId, dataId, (thumbnailUriAsString != null
+                ? Uri.parse(thumbnailUriAsString) : null), true, isValid, lookupKey, null);
     }
 
     public static RecipientEntry constructSecondLevelEntry(String displayName,
             int displayNameSource, String destination, int destinationType,
             String destinationLabel, long contactId, Long directoryId, long dataId,
-            String thumbnailUriAsString, boolean isValid, String lookupKey) {
+            String thumbnailUriAsString, boolean isValid, String lookupKey, String identityKey) {
+        return new RecipientEntry(ENTRY_TYPE_PERSON, pickDisplayName(displayNameSource,
+                displayName, destination), destination, destinationType, destinationLabel,
+                contactId, directoryId, dataId, (thumbnailUriAsString != null
+                ? Uri.parse(thumbnailUriAsString) : null), false, isValid, lookupKey, identityKey);
+    }
+
+    public static RecipientEntry constructSecondLevelEntry(String displayName,
+                                                           int displayNameSource, String destination, int destinationType,
+                                                           String destinationLabel, long contactId, Long directoryId, long dataId,
+                                                           String thumbnailUriAsString, boolean isValid, String lookupKey) {
         return new RecipientEntry(ENTRY_TYPE_PERSON, pickDisplayName(displayNameSource,
                 displayName, destination), destination, destinationType, destinationLabel,
                 contactId, directoryId, dataId, (thumbnailUriAsString != null
@@ -283,6 +333,10 @@ public class RecipientEntry implements Parcelable {
         return mLookupKey;
     }
 
+    public String getIdentityKey() {
+        return mIdentityKey;
+    }
+
     @Override
     public String toString() {
         return mDisplayName + " <" + mDestination + ">, isValid=" + mIsValid;
@@ -332,6 +386,7 @@ public class RecipientEntry implements Parcelable {
         dest.writeByte(mIsInvited ? (byte) 1 : (byte) 0);
         dest.writeByteArray(this.mPhotoBytes);
         dest.writeString(this.mLookupKey);
+        dest.writeString(this.mIdentityKey);
     }
 
     private RecipientEntry(Parcel in) {
@@ -352,6 +407,7 @@ public class RecipientEntry implements Parcelable {
         this.mIsInvited = in.readByte() != 0;
         this.mPhotoBytes = in.createByteArray();
         this.mLookupKey = in.readString();
+        this.mIdentityKey = in.readString();
     }
 
     public static final Parcelable.Creator<RecipientEntry> CREATOR = new Parcelable.Creator<RecipientEntry>() {

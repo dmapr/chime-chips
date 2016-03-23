@@ -83,6 +83,7 @@ import android.provider.ContactsContract.Contacts;
         public static final int DISPLAY_NAME_SOURCE = 7; // int
         public static final int LOOKUP_KEY = 8;          // String
         public static final int MIME_TYPE = 9;           // String
+        public static final int IDENTITY_KEY = 10;         // String
 
         public Query(String[] projection, Uri contentFilter, Uri content) {
             mProjection = projection;
